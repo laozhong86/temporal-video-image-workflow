@@ -1,0 +1,474 @@
+以下是涵盖以下内容的各类重要规则：
+- 开发流程（dev_workflow）
+- `.windsurfrules` 文档自改进流程
+- 修改或添加本文件新章节/规则时需遵循的模板
+
+---
+开发流程（DEV_WORKFLOW）
+---
+说明：使用元开发脚本（scripts/dev.js）管理基于任务的开发工作流程的指南
+适用模式：**/*
+适用文件：**/*
+始终应用：是
+---
+
+- **全局 CLI 命令**
+  - Task Master 现通过 `task-master` 命令提供全局 CLI
+  - `scripts/dev.js` 的所有功能都可通过此界面使用
+  - 使用 `npm install -g claude-task-master` 全局安装，或通过 `npx` 本地使用
+  - 使用 `task-master <command>` 替代 `node scripts/dev.js <command>`
+  - 示例：
+    - 使用 `task-master list` 替代 `node scripts/dev.js list`
+    - 使用 `task-master next` 替代 `node scripts/dev.js next`
+    - 使用 `task-master expand --id=3` 替代 `node scripts/dev.js expand --id=3`
+  - 所有命令与脚本等效选项相同
+  - CLI 还提供额外命令，如 `task-master init` 用于项目设置
+
+- **开发工作流程**
+  - 通过运行 `task-master init` 或 `node scripts/dev.js parse-prd --input=<prd-file.txt>` 生成初始 tasks.json 来启动新项目
+  - 使用 `task-master list` 查看当前任务、状态和 ID，开始编码会话
+  - 在分解任务前，使用 `task-master analyze-complexity --research` 分析任务复杂度
+  - 根据依赖项（均标记为“已完成”）、优先级和 ID 顺序选择任务
+  - 通过检查 tasks/ 目录中的任务文件或询问用户输入来澄清任务
+  - 使用 `task-master show <id>` 查看特定任务详情，了解实现要求
+  - 使用 `task-master expand --id=<id>` 及适当标志分解复杂任务
+  - 如需重新生成子任务，先使用 `task-master clear-subtasks --id=<id>` 清除现有子任务
+  - 按照任务详情、依赖项和项目标准实现代码
+  - 按照测试策略验证任务后，标记为完成
+  - 使用 `task-master set-status --id=<id> --status=done` 标记已完成任务
+  - 当实现与原计划不同时，更新依赖任务
+  - 更新 tasks.json 后，使用 `task-master generate` 生成任务文件
+  - 如有需要，使用 `task-master fix-dependencies` 维护有效的依赖结构
+  - 尊重依赖链和任务优先级，选择工作时
+  - 使用 list 命令定期报告进度
+
+- **任务复杂度分析**
+  - 运行 `node scripts/dev.js analyze-complexity --research` 进行全面分析
+  - 在 scripts/task-complexity-report.json 中查看复杂度报告
+  - 或使用 `node scripts/dev.js complexity-report` 查看格式化、可读的报告版本
+  - 关注复杂度得分最高（8-10）的任务，进行详细分解
+  - 根据分析结果确定适当的子任务分配
+  - 注意报告会自动被 expand 命令使用
+
+- **任务分解流程**
+  - 对于已完成复杂度分析的任务，使用 `node scripts/dev.js expand --id=<id>`
+  - 否则使用 `node scripts/dev.js expand --id=<id> --subtasks=<number>`
+  - 添加 `--research` 标志，利用 Perplexity AI 进行有研究支持的扩展
+  - 如有需要，使用 `--prompt="<context>"` 提供额外上下文
+  - 根据需要审查和调整生成的子任务
+  - 使用 `--all` 标志一次性扩展所有待处理任务
+  - 如果需要重新生成子任务，先使用 `clear-subtasks` 命令清除
+
+- **实现偏差处理**
+  - 当实现与计划方法有显著差异时
+  - 当当前实现选择需要修改后续任务时
+  - 当出现新的依赖项或需求时
+  - 使用 `node scripts/dev.js update --from=<futureTaskId> --prompt="<explanation>"` 更新 tasks.json
+
+- **任务状态管理**
+  - 使用“待处理”表示已准备好开始的任务
+  - 使用“已完成”表示已验证完成的任务
+  - 使用“推迟”表示推迟的任务
+  - 根据项目特定工作流程需要，添加自定义状态值
+
+- **任务文件格式参考**
+  ```
+  # 任务 ID：<id>
+  # 标题：<title>
+  # 状态：<status>
+  # 依赖项：<以逗号分隔的依赖项 ID 列表>
+  # 优先级：<priority>
+  # 描述：<简要描述>
+  # 详细信息：
+  <详细实现说明>
+  
+  # 测试策略：
+  <验证方法>
+  ```
+
+- **命令参考：parse-prd**
+  - 旧语法：`node scripts/dev.js parse-prd --input=<prd-file.txt>`
+  - CLI 语法：`task-master parse-prd --input=<prd-file.txt>`
+  - 说明：解析 PRD 文档并生成结构化的 tasks.json 文件
+  - 参数：
+    - `--input=<file>`：PRD 文本文件路径（默认：sample-prd.txt）
+  - 示例：`task-master parse-prd --input=requirements.txt`
+  - 注意：会覆盖现有 tasks.json 文件。使用时需谨慎。
+
+- **命令参考：update**
+  - 旧语法：`node scripts/dev.js update --from=<id> --prompt="<prompt>"`
+  - CLI 语法：`task-master update --from=<id> --prompt="<prompt>"`
+  - 说明：根据提供的提示更新 ID 大于或等于指定 ID 的任务
+  - 参数：
+    - `--from=<id>`：开始更新的起始任务 ID（必需）
+    - `--prompt="<text>"`：变更说明或新上下文（必需）
+  - 示例：`task-master update --from=4 --prompt="Now we are using Express instead of Fastify."`
+  - 注意：仅更新未标记为“已完成”的任务。已完成的任务保持不变。
+
+- **命令参考：generate**
+  - 旧语法：`node scripts/dev.js generate`
+  - CLI 语法：`task-master generate`
+  - 说明：根据 tasks.json 在 tasks/ 目录中生成单独的任务文件
+  - 参数：
+    - `--file=<path>, -f`：使用替代的 tasks.json 文件（默认：'tasks/tasks.json'）
+    - `--output=<dir>, -o`：输出目录（默认：'tasks'）
+  - 示例：`task-master generate`
+  - 注意：会覆盖现有任务文件。如需要，会创建 tasks/ 目录。
+
+- **命令参考：set-status**
+  - 旧语法：`node scripts/dev.js set-status --id=<id> --status=<status>`
+  - CLI 语法：`task-master set-status --id=<id> --status=<status>`
+  - 说明：更新 tasks.json 中特定任务的状态
+  - 参数：
+    - `--id=<id>`：要更新的任务 ID（必需）
+    - `--status=<status>`：新的状态值（必需）
+  - 示例：`task-master set-status --id=3 --status=done`
+  - 注意：常见值为“已完成”、“待处理”和“推迟”，但接受任何字符串。
+
+- **命令参考：list**
+  - 旧语法：`node scripts/dev.js list`
+  - CLI 语法：`task-master list`
+  - 说明：列出 tasks.json 中的所有任务，包括 ID、标题和状态
+  - 参数：
+    - `--status=<status>, -s`：按状态筛选
+    - `--with-subtasks`：显示每个任务的子任务
+    - `--file=<path>, -f`：使用替代的 tasks.json 文件（默认：'tasks/tasks.json'）
+  - 示例：`task-master list`
+  - 注意：提供项目进度的快速概览。会话开始时使用。
+
+- **命令参考：expand**
+  - 旧语法：`node scripts/dev.js expand --id=<id> [--num=<number>] [--research] [--prompt="<context>"]`
+  - CLI 语法：`task-master expand --id=<id> [--num=<number>] [--research] [--prompt="<context>"]`
+  - 说明：为详细实现扩展任务的子任务
+  - 参数：
+    - `--id=<id>`：要扩展的任务 ID（除非使用 --all，否则为必需）
+    - `--all`：按复杂度优先级扩展所有待处理任务
+    - `--num=<number>`：要生成的子任务数量（默认：来自复杂度报告）
+    - `--research`：使用 Perplexity AI 进行有研究支持的生成
+    - `--prompt="<text>"`：子任务生成的额外上下文
+    - `--force`：即使任务已有子任务，也重新生成子任务
+  - 示例：`task-master expand --id=3 --num=5 --research --prompt="Focus on security aspects"`
+  - 注意：如有可用，使用复杂度报告的建议。
+
+- **命令参考：analyze-complexity**
+  - 旧语法：`node scripts/dev.js analyze-complexity [options]`
+  - CLI 语法：`task-master analyze-complexity [options]`
+  - 说明：分析任务复杂度并生成扩展建议
+  - 参数：
+    - `--output=<file>, -o`：输出文件路径（默认：scripts/task-complexity-report.json）
+    - `--model=<model>, -m`：覆盖使用的 LLM 模型
+    - `--threshold=<number>, -t`：扩展建议的最低分数（默认：5）
+    - `--file=<path>, -f`：使用替代的 tasks.json 文件
+    - `--research, -r`：使用 Perplexity AI 进行有研究支持的分析
+  - 示例：`task-master analyze-complexity --research`
+  - 注意：报告包括复杂度分数、推荐的子任务和定制的提示。
+
+- **命令参考：clear-subtasks**
+  - 旧语法：`node scripts/dev.js clear-subtasks --id=<id>`
+  - CLI 语法：`task-master clear-subtasks --id=<id>`
+  - 说明：从指定任务中移除子任务，以便重新生成
+  - 参数：
+    - `--id=<id>`：要清除子任务的任务 ID 或以逗号分隔的 ID 列表
+    - `--all`：清除所有任务的子任务
+  - 示例：
+    - `task-master clear-subtasks --id=3`
+    - `task-master clear-subtasks --id=1,2,3`
+    - `task-master clear-subtasks --all`
+  - 注意：
+    - 清除子任务后，任务文件会自动重新生成
+    - 可与 expand 命令结合，立即生成新的子任务
+    - 适用于父任务和单个子任务
+
+- **任务结构字段**
+  - **id**：任务的唯一标识符（示例：`1`）
+  - **title**：简短、描述性的标题（示例：`"Initialize Repo"`）
+  - **description**：对任务涉及内容的简洁总结（示例：`"Create a new repository, set up initial structure."`）
+  - **status**：任务的当前状态（示例：`"pending"`、`"done"`、`"deferred"`）
+  - **dependencies**：先决任务的 ID 列表（示例：`[1, 2]`）
+    - 依赖项会显示状态指示器（已完成为✅，待处理为⏱️）
+    - 这有助于快速识别哪些先决任务阻碍了工作
+  - **priority**：重要性级别（示例：`"high"`、`"medium"`、`"low"`）
+  - **details**：深入的实现说明（示例：`"Use GitHub client ID/secret, handle callback, set session token."`）
+  - **testStrategy**：验证方法（示例：`"Deploy and call endpoint to confirm 'Hello World' response."`）
+  - **subtasks**：更小、更具体任务的列表（示例：`[{"id": 1, "title": "Configure OAuth", ...}]`）
+
+- **环境变量配置**
+  - **ANTHROPIC_API_KEY**（必需）：您的 Anthropic API 密钥，用于 Claude（示例：`ANTHROPIC_API_KEY=sk-ant-api03-...`）
+  - **MODEL**（默认：`"claude-3-7-sonnet-20250219"`）：使用的 Claude 模型（示例：`MODEL=claude-3-opus-20240229`）
+  - **MAX_TOKENS**（默认：`"4000"`）：响应的最大令牌数（示例：`MAX_TOKENS=8000`）
+  - **TEMPERATURE**（默认：`"0.7"`）：模型响应的温度（示例：`TEMPERATURE=0.5`）
+  - **DEBUG**（默认：`"false"`）：启用调试日志（示例：`DEBUG=true`）
+  - **TASKMASTER_LOG_LEVEL**（默认：`"info"`）：控制台输出级别（示例：`TASKMASTER_LOG_LEVEL=debug`）
+  - **DEFAULT_SUBTASKS**（默认：`"3"`）：默认子任务数量（示例：`DEFAULT_SUBTASKS=5`）
+  - **DEFAULT_PRIORITY**（默认：`"medium"`）：默认优先级（示例：`DEFAULT_PRIORITY=high`）
+  - **PROJECT_NAME**（默认：`"MCP SaaS MVP"`）：元数据中的项目名称（示例：`PROJECT_NAME=My Awesome Project`）
+  - **PROJECT_VERSION**（默认：`"1.0.0"`）：元数据中的版本（示例：`PROJECT_VERSION=2.1.0`）
+  - **PERPLEXITY_API_KEY**：用于研究支持功能（示例：`PERPLEXITY_API_KEY=pplx-...`）
+  - **PERPLEXITY_MODEL**（默认：`"sonar-medium-online"`）：Perplexity 模型（示例：`PERPLEXITY_MODEL=sonar-large-online`）
+
+- **确定下一个任务**
+  - 运行 `task-master next` 显示要处理的下一个任务
+  - next 命令会识别所有依赖项均已满足的任务
+  - 任务按优先级、依赖项数量和 ID 排序
+  - 命令显示全面的任务信息，包括：
+    - 基本任务详情和描述
+    - 实现细节
+    - 子任务（如果存在）
+    - 上下文建议的操作
+  - 开始任何新的开发工作前推荐使用
+  - 尊重项目依赖结构
+  - 确保按适当顺序完成任务
+  - 提供常用任务操作的即用命令
+
+- **查看特定任务详情**
+  - 运行 `task-master show <id>` 或 `task-master show --id=<id>` 查看特定任务
+  - 使用点表示法表示子任务：`task-master show 1.2`（显示任务 1 的第 2 个子任务）
+  - 显示与 next 命令类似的信息，但针对特定任务
+  - 对于父任务，显示所有子任务及其当前状态
+  - 对于子任务，显示父任务信息和关系
+  - 提供针对特定任务的上下文建议操作
+  - 用于在实现前检查任务详情或查看状态
+
+- **管理任务依赖项**
+  - 使用 `task-master add-dependency --id=<id> --depends-on=<id>` 添加依赖关系
+  - 使用 `task-master remove-dependency --id=<id> --depends-on=<id>` 移除依赖关系
+  - 系统防止循环依赖和重复的依赖项条目
+  - 在添加或移除依赖项前会检查依赖项是否存在
+  - 依赖项变更后，任务文件会自动重新生成
+  - 在任务列表和文件中，依赖项会以状态指示器显示
+
+- **命令参考：add-dependency**
+  - 旧语法：`node scripts/dev.js add-dependency --id=<id> --depends-on=<id>`
+  - CLI 语法：`task-master add-dependency --id=<id> --depends-on=<id>`
+  - 说明：在两个任务之间添加依赖关系
+  - 参数：
+    - `--id=<id>`：将依赖于另一个任务的任务 ID（必需）
+    - `--depends-on=<id>`：将成为依赖项的任务 ID（必需）
+  - 示例：`task-master add-dependency --id=22 --depends-on=21`
+  - 注意：防止循环依赖和重复；自动更新任务文件
+
+- **命令参考：remove-dependency**
+  - 旧语法：`node scripts/dev.js remove-dependency --id=<id> --depends-on=<id>`
+  - CLI 语法：`task-master remove-dependency --id=<id> --depends-on=<id>`
+  - 说明：移除两个任务之间的依赖关系
+  - 参数：
+    - `--id=<id>`：要移除依赖项的任务 ID（必需）
+    - `--depends-on=<id>`：要移除的依赖项任务 ID（必需）
+  - 示例：`task-master remove-dependency --id=22 --depends-on=21`
+  - 注意：检查依赖项是否存在；自动更新任务文件
+
+- **命令参考：validate-dependencies**
+  - 旧语法：`node scripts/dev.js validate-dependencies [options]`
+  - CLI 语法：`task-master validate-dependencies [options]`
+  - 说明：检查 tasks.json 和任务文件中的无效依赖项
+  - 参数：
+    - `--file=<path>, -f`：使用替代的 tasks.json 文件（默认：'tasks/tasks.json'）
+  - 示例：`task-master validate-dependencies`
+  - 注意：
+    - 报告所有不存在的依赖项和自依赖项，但不修改文件
+    - 提供任务依赖状态的详细统计
+    - 使用 fix-dependencies 前，用于审核任务结构
+
+- **命令参考：fix-dependencies**
+  - 旧语法：`node scripts/dev.js fix-dependencies [options]`
+  - CLI 语法：`task-master fix-dependencies [options]`
+  - 说明：查找并修复 tasks.json 和任务文件中的所有无效依赖项
+  - 参数：
+    - `--file=<path>, -f`：使用替代的 tasks.json 文件（默认：'tasks/tasks.json'）
+  - 示例：`task-master fix-dependencies`
+  - 注意：
+    - 移除对不存在任务和子任务的引用
+    - 消除自依赖项（任务依赖于自身）
+    - 用修正后的依赖项重新生成任务文件
+    - 提供所有修复的详细报告
+
+- **命令参考：complexity-report**
+  - 旧语法：`node scripts/dev.js complexity-report [options]`
+  - CLI 语法：`task-master complexity-report [options]`
+  - 说明：以格式化、易于阅读的方式显示任务复杂度分析报告
+  - 参数：
+    - `--file=<path>, -f`：复杂度报告文件路径（默认：'scripts/task-complexity-report.json'）
+  - 示例：`task-master complexity-report`
+  - 注意：
+    - 按复杂度分数显示任务，并提供推荐操作
+    - 提供复杂度分布统计
+    - 显示复杂任务的即用扩展命令
+    - 如果没有报告，会提供交互式生成报告的选项
+
+- **命令参考：add-task**
+  - CLI 语法：`task-master add-task [options]`
+  - 说明：使用 AI 向 tasks.json 添加新任务
+  - 参数：
+    - `--file=<path>, -f`：任务文件路径（默认：'tasks/tasks.json'）
+    - `--prompt=<text>, -p`：要添加的任务描述（必需）
+    - `--dependencies=<ids>, -d`：此任务依赖的任务 ID 列表，用逗号分隔
+    - `--priority=<priority>`：任务优先级（高、中、低）（默认：'medium'）
+  - 示例：`task-master add-task --prompt="Create user authentication using Auth0"`
+  - 注意：使用 AI 将描述转换为具有适当细节的结构化任务
+
+- **命令参考：init**
+  - CLI 语法：`task-master init`
+  - 说明：初始化具有 Task Master 结构的新项目
+  - 参数：无
+  - 示例：`task-master init`
+  - 注意：
+    - 创建初始项目结构及所需文件
+    - 如果未提供，会提示项目设置
+    - 如适当，会与现有文件合并
+    - 可用于快速启动新的 Task Master 项目
+
+- **代码分析与重构技巧**
+  - **顶层函数搜索**
+    - 使用 grep 模式匹配查找整个代码库中所有导出的函数
+    - 命令：`grep -E "export (function|const) \w+|function \w+\(|const \w+ = \(|module\.exports" --include="*.js" -r ./`
+    - 好处：
+      - 不用阅读实现细节，就能快速识别所有公共 API 函数
+      - 在重构期间（例如从单体结构迁移到模块化结构）比较不同文件中的函数
+      - 验证重构模块中是否存在所有预期函数
+      - 识别重复功能或命名冲突
+    - 使用示例：
+      - 从 `scripts/dev.js` 迁移到模块化结构时：`grep -E "function \w+\(" scripts/dev.js`
+      - 检查目录中的函数导出：`grep -E "export (function|const)" scripts/modules/`
+      - 查找潜在命名冲突：`grep -E "function (get|set|create|update)\w+\(" -r ./`
+    - 变体：
+      - 添加 `-n` 标志包含行号
+      - 添加 `--include="*.ts"` 按文件扩展名过滤
+      - 与 `| sort` 结合按字母顺序排列结果
+    - 与重构工作流集成：
+      - 首先映射源文件中的所有函数
+      - 根据函数分组创建目标模块文件
+      - 验证所有函数是否已正确迁移
+      - 检查是否有无意的重复或遗漏
+
+---
+WINDSURF 规则（WINDSURF_RULES）
+---
+说明：创建和维护 WINDSURF 规则的指南，以确保一致性和有效性。
+适用模式：.windsurfrules
+适用文件：.windsurfrules
+始终应用：是
+---
+以下是您在本文件中应如何结构化新规则章节的描述。
+- **所需规则结构：**
+  ```markdown
+  ---
+  description: 清晰的一行描述，说明该规则所强制执行的内容
+  globs: path/to/files/*.ext, other/path/**/*
+  alwaysApply: 布尔值
+  ---
+
+  - **主要点以粗体显示**
+    - 带有详细信息的子点
+    - 示例和解释
+  ```
+
+- **章节引用：**
+  - 使用 `ALL_CAPS_SECTION` 引用文件
+  - 示例：`WINDSURF_RULES`
+
+- **代码示例：**
+  - 使用特定语言的代码块
+  ```typescript
+  // ✅ DO：展示好的示例
+  const goodExample = true;
+  
+  // ❌ DON'T：展示反面模式
+  const badExample = false;
+  ```
+
+- **规则内容指南：**
+  - 从高级概述开始
+  - 包含具体、可操作的要求
+  - 展示正确实现的示例
+  - 尽可能引用现有代码
+  - 通过引用其他规则保持规则的 DRY 原则
+
+- **规则维护：**
+  - 当出现新的模式时更新规则
+  - 添加实际代码库中的示例
+  - 移除过时的模式
+  - 交叉引用相关规则
+
+- **最佳实践：**
+  - 使用项目符号以清晰表达
+  - 保持描述简洁
+  - 同时包含 DO 和 DON'T 示例
+  - 引用实际代码而非理论示例
+  - 在规则中保持一致的格式
+
+---
+自我改进（SELF_IMPROVE）
+---
+说明：根据出现的代码模式和最佳实践持续改进此规则文件的指南。
+适用模式：**/*
+适用文件：**/*
+始终应用：是
+---
+
+- **规则改进触发因素：**
+  - 出现未被现有规则涵盖的新代码模式
+  - 文件中反复出现类似的实现
+  - 可预防的常见错误模式
+  - 持续使用的新库或工具
+  - 代码库中出现的新最佳实践
+
+- **分析流程：**
+  - 将新代码与现有规则进行比较
+  - 识别应标准化的模式
+  - 查找对外部文档的引用
+  - 检查一致的错误处理模式
+  - 监控测试模式和覆盖范围
+
+- **规则更新：**
+  - **添加新规则的情况：**
+    - 在 3 个或更多文件中使用了新的技术/模式
+    - 规则可预防常见错误
+    - 代码审查反复提及相同的反馈
+    - 出现新的安全或性能模式
+
+  - **修改现有规则的情况：**
+    - 代码库中存在更好的示例
+    - 发现额外的边缘情况
+    - 相关规则已更新
+    - 实现细节已更改
+
+- **示例模式识别：**
+  ```typescript
+  // 如果您看到重复的模式，例如：
+  const data = await prisma.user.findMany({
+    select: { id: true, email: true },
+    where: { status: 'ACTIVE' }
+  });
+  
+  // 考虑在 .windsurfrules 中添加一个 PRISMA 部分：
+  // - 标准选择字段
+  // - 常见的 where 条件
+  // - 性能优化模式
+  ```
+
+- **规则质量检查：**
+  - 规则应具有可操作性和具体性
+  - 示例应来自实际代码
+  - 引用应保持最新
+  - 模式应得到一致的执行
+
+- **持续改进：**
+  - 监控代码审查评论
+  - 跟踪常见的开发问题
+  - 在重大重构后更新规则
+  - 添加相关文档的链接
+  - 交叉引用相关规则
+
+- **规则弃用：**
+  - 标记过时的模式为弃用
+  - 移除不再适用的规则
+  - 更新对弃用规则的引用
+  - 为旧模式记录迁移路径
+
+- **文档更新：**
+  - 保持示例与代码同步
+  - 更新对外部文档的引用
+  - 维护相关规则之间的链接
+  - 记录破坏性变更
+
+遵循 WINDSURF 规则进行适当的规则格式化和 WINDSURF 规则章节的结构。

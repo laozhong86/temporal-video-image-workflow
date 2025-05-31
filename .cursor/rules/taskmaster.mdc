@@ -1,0 +1,408 @@
+---
+描述：Taskmaster MCP工具和CLI命令的全面参考。
+通配符：**/*
+始终应用：true
+---
+# Taskmaster工具与命令参考
+
+本文档提供了与Taskmaster交互的详细参考，涵盖了推荐的MCP工具（适用于像Cursor这样的集成）以及相应的`task-master` CLI命令（用于直接用户交互或备用）。
+
+**注意**：对于通过编程方式或集成工具与Taskmaster交互，**强烈推荐使用MCP工具**，因为它们性能更好、数据结构化且具有错误处理功能。CLI命令则作为用户友好的替代和备用选项。
+
+**重要提示**：一些MCP工具涉及AI处理……这些AI驱动的工具包括`parse_prd`、`analyze_project_complexity`、`update_subtask`、`update_task`、`update`、`expand_all`、`expand_task`和`add_task`。
+
+---
+
+## 初始化与设置
+
+### 1. 初始化项目（`init`）
+
+*   **MCP工具**：`initialize_project`
+*   **CLI命令**：`task-master init [选项]`
+*   **描述**：`在当前目录为新项目设置Taskmaster的基本文件结构和配置。`
+*   **关键CLI选项**：
+    *   `--name <名称>`：`在Taskmaster的配置中设置项目名称。`
+    *   `--description <文本>`：`为项目提供简要描述。`
+    *   `--version <版本>`：`设置项目的初始版本，例如“0.1.0”。`
+    *   `-y, --yes`：`使用默认设置快速初始化Taskmaster，无需交互式提示。`
+*   **使用方法**：在新项目开始时运行一次。
+*   **MCP变体描述**：`通过运行“task-master init”命令在当前目录为新项目设置Taskmaster的基本文件结构和配置。`
+*   **关键MCP参数/选项**：
+    *   `projectName`：`设置项目名称。`（CLI：`--name <名称>`）
+    *   `projectDescription`：`为项目提供简要描述。`（CLI：`--description <文本>`）
+    *   `projectVersion`：`设置项目的初始版本，例如“0.1.0”。`（CLI：`--version <版本>`）
+    *   `authorName`：`作者名称。`（CLI：`--author <作者>`）
+    *   `skipInstall`：`跳过安装依赖项。默认为false。`（CLI：`--skip-install`）
+    *   `addAliases`：`添加shell别名tm和taskmaster。默认为false。`（CLI：`--aliases`）
+    *   `yes`：`跳过提示并使用默认值/提供的参数。默认为false。`（CLI：`-y, --yes`）
+*   **使用方法**：通常通过像Cursor这样的集成工具在新项目开始时运行一次。在MCP服务器的当前工作目录中运行。
+*   **重要提示**：完成后，您*必须*解析prd才能生成任务。在此之前不会有任务文件。初始化后的下一步应该是使用`scripts/example_prd.txt`中的示例PRD创建PRD。
+
+### 2. 解析PRD（`parse_prd`）
+
+*   **MCP工具**：`parse_prd`
+*   **CLI命令**：`task-master parse-prd [文件] [选项]`
+*   **描述**：`使用Taskmaster解析产品需求文档（PRD）或文本文件，自动生成初始任务集到tasks.json。`
+*   **关键参数/选项**：
+    *   `input`：`Taskmaster要解析以获取任务的PRD或需求文本文件的路径。`（CLI：`[文件]`位置参数或`-i, --input <文件>`）
+    *   `output`：`指定Taskmaster应将生成的“tasks.json”文件保存到何处。默认为“tasks/tasks.json”。`（CLI：`-o, --output <文件>`）
+    *   `numTasks`：`Taskmaster应从文档中生成的大致顶级任务数量。`（CLI：`-n, --num-tasks <数字>`）
+    *   `force`：`使用此选项允许Taskmaster在不询问确认的情况下覆盖现有的“tasks.json”。`（CLI：`-f, --force`）
+*   **使用方法**：适用于从现有需求文档启动项目。
+*   **注意事项**：Task Master将严格遵循PRD中提到的任何具体要求，如库、数据库架构、框架、技术栈等，同时填补PRD未完全指定的空白。任务旨在提供最直接的实现路径，同时避免过度设计。
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。如果用户没有PRD，建议讨论他们的想法，然后使用`scripts/example_prd.txt`中的示例PRD作为模板，根据他们的想法创建PRD，以便与`parse-prd`一起使用。
+
+---
+
+## AI模型配置
+
+### 2. 管理模型（`models`）
+
+*   **MCP工具**：`models`
+*   **CLI命令**：`task-master models [选项]`
+*   **描述**：`查看当前AI模型配置或为不同角色（主、研究、备用）设置特定模型。允许设置Ollama和OpenRouter的自定义模型ID。`
+*   **关键MCP参数/选项**：
+    *   `setMain <模型_id>`：`设置用于任务生成/更新的主模型ID。`（CLI：`--set-main <模型_id>`）
+    *   `setResearch <模型_id>`：`设置用于研究支持操作的模型ID。`（CLI：`--set-research <模型_id>`）
+    *   `setFallback <模型_id>`：`设置主模型失败时使用的模型ID。`（CLI：`--set-fallback <模型_id>`）
+    *   `ollama <布尔值>`：`表示设置的模型ID是自定义的Ollama模型。`（CLI：`--ollama`）
+    *   `openrouter <布尔值>`：`表示设置的模型ID是自定义的OpenRouter模型。`（CLI：`--openrouter`）
+    *   `listAvailableModels <布尔值>`：`如果为true，则列出未分配给角色的可用模型。`（CLI：无直接等效项；CLI自动列出可用模型）
+    *   `projectRoot <字符串>`：`可选。项目根目录的绝对路径。`（CLI：自动确定）
+*   **关键CLI选项**：
+    *   `--set-main <模型_id>`：`设置主模型。`
+    *   `--set-research <模型_id>`：`设置研究模型。`
+    *   `--set-fallback <模型_id>`：`设置备用模型。`
+    *   `--ollama`：`指定提供的模型ID是针对Ollama的（与--set-*一起使用）。`
+    *   `--openrouter`：`指定提供的模型ID是针对OpenRouter的（与--set-*一起使用）。验证是否符合OpenRouter API。`
+    *   `--setup`：`运行交互式设置以配置模型，包括自定义Ollama/OpenRouter ID。`
+*   **使用方法（MCP）**：不带设置标志调用以获取当前配置。使用`setMain`、`setResearch`或`setFallback`与有效模型ID来更新配置。使用`listAvailableModels: true`获取未分配模型的列表。要设置自定义模型，请提供模型ID并设置`ollama: true`或`openrouter: true`。
+*   **使用方法（CLI）**：不带标志运行以查看当前配置和可用模型。使用设置标志更新特定角色。使用`--setup`进行引导配置，包括自定义模型。要通过标志设置自定义模型，请使用`--set-<角色>=<模型_id>`，同时使用`--ollama`或`--openrouter`。
+*   **注意事项**：配置存储在项目根目录的`.taskmasterconfig`文件中。此命令/工具会修改该文件。使用`listAvailableModels`或`task-master models`查看内部支持的模型。OpenRouter自定义模型会验证其实时API。Ollama自定义模型不会实时验证。
+*   **API注意事项**：所选AI提供商（根据其模型）的API密钥需要存在于mcp.json文件中，才能在MCP上下文中使用。CLI能够读取它们时，这些API密钥必须存在于本地的.env文件中。
+*   **模型成本**：支持模型中的成本以美元表示。输入/输出值为3表示3.00美元。值为0.8表示0.80美元。
+*   **警告**：**不要手动编辑.taskmasterconfig文件**。根据需要使用包含的命令，无论是MCP格式还是CLI格式。始终优先使用MCP工具，将CLI作为备用选项。
+
+---
+
+## 任务列表与查看
+
+### 3. 获取任务（`get_tasks`）
+
+*   **MCP工具**：`get_tasks`
+*   **CLI命令**：`task-master list [选项]`
+*   **描述**：`列出您的Taskmaster任务，可选地按状态过滤并显示子任务。`
+*   **关键参数/选项**：
+    *   `status`：`仅显示与该状态匹配的Taskmaster任务，例如“pending”或“done”。`（CLI：`-s, --status <状态>`）
+    *   `withSubtasks`：`在列表中包含子任务，缩进在它们的父任务下。`（CLI：`--with-subtasks`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在工作会话开始时获取项目状态概览，通常会用到。
+
+### 4. 获取下一个任务（`next_task`）
+
+*   **MCP工具**：`next_task`
+*   **CLI命令**：`task-master next [选项]`
+*   **描述**：`要求Taskmaster显示您可以开始工作的下一个可用任务，基于状态和已完成的依赖项。`
+*   **关键参数/选项**：
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：根据计划确定下一步要做什么。
+
+### 5. 获取任务详细信息（`get_task`）
+
+*   **MCP工具**：`get_task`
+*   **CLI命令**：`task-master show [id] [选项]`
+*   **描述**：`通过其ID显示特定Taskmaster任务或子任务的详细信息。`
+*   **关键参数/选项**：
+    *   `id`：`必需。您要查看的Taskmaster任务的ID，例如“15”，或子任务的ID，例如“15.2”。`（CLI：`[id]`位置参数或`-i, --id <id>`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在开始工作之前了解特定任务的完整详细信息、实现注意事项和测试策略。
+
+---
+
+## 任务创建与修改
+
+### 6. 添加任务（`add_task`）
+
+*   **MCP工具**：`add_task`
+*   **CLI命令**：`task-master add-task [选项]`
+*   **描述**：`通过描述添加新任务到Taskmaster；AI将对其进行结构化。`
+*   **关键参数/选项**：
+    *   `prompt`：`必需。描述您要Taskmaster创建的新任务，例如“使用JWT实现用户身份验证”。`（CLI：`-p, --prompt <文本>`）
+    *   `dependencies`：`指定必须完成才能开始此新任务的任何Taskmaster任务的ID，例如“12,14”。`（CLI：`-d, --dependencies <ids>`）
+    *   `priority`：`设置新任务的优先级：“high”、“medium”或“low”。默认为“medium”。`（CLI：`--priority <优先级>`）
+    *   `research`：`允许Taskmaster使用研究角色进行可能更具信息量的任务创建。`（CLI：`-r, --research`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在开发过程中快速添加新识别的任务。
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 7. 添加子任务（`add_subtask`）
+
+*   **MCP工具**：`add_subtask`
+*   **CLI命令**：`task-master add-subtask [选项]`
+*   **描述**：`向Taskmaster父任务添加新子任务，或将现有任务转换为子任务。`
+*   **关键参数/选项**：
+    *   `id` / `parent`：`必需。将成为父级的Taskmaster任务的ID。`（MCP：`id`，CLI：`-p, --parent <id>`）
+    *   `taskId`：`如果您想将现有的顶级Taskmaster任务转换为指定父级的子任务，请使用此选项。`（CLI：`-i, --task-id <id>`）
+    *   `title`：`如果不使用taskId，则为必需。Taskmaster应创建的新子任务的标题。`（CLI：`-t, --title <标题>`）
+    *   `description`：`新子任务的简要描述。`（CLI：`-d, --description <文本>`）
+    *   `details`：`为新子任务提供实现注意事项或详细信息。`（CLI：`--details <文本>`）
+    *   `dependencies`：`指定必须完成的其他任务或子任务的ID，例如“15”或“16.1”，才能开始这个新子任务。`（CLI：`--dependencies <ids>`）
+    *   `status`：`设置新子任务的初始状态。默认为“pending”。`（CLI：`-s, --status <状态>`）
+    *   `skipGenerate`：`阻止Taskmaster在添加子任务后自动重新生成markdown任务文件。`（CLI：`--skip-generate`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：手动分解任务或重新组织现有任务。
+
+### 8. 更新任务（`update`）
+
+*   **MCP工具**：`update`
+*   **CLI命令**：`task-master update [选项]`
+*   **描述**：`根据新上下文或更改，从特定任务ID开始，在Taskmaster中更新多个即将进行的任务。`
+*   **关键参数/选项**：
+    *   `from`：`必需。Taskmaster应更新的第一个任务的ID。所有具有此ID或更高且状态不是“done”的任务都将被考虑。`（CLI：`--from <id>`）
+    *   `prompt`：`必需。向Taskmaster解释要应用于任务的更改或新上下文，例如“我们现在使用React Query而不是Redux Toolkit进行数据获取”。`（CLI：`-p, --prompt <文本>`）
+    *   `research`：`允许Taskmaster使用研究角色进行更具信息量的更新。需要适当的API密钥。`（CLI：`-r, --research`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：处理影响多个未来任务的重大实现更改或转变。示例CLI：`task-master update --from='18' --prompt='切换到React Query。\n需要重构数据获取……'`
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 9. 更新任务（`update_task`）
+
+*   **MCP工具**：`update_task`
+*   **CLI命令**：`task-master update-task [选项]`
+*   **描述**：`通过其ID修改特定的Taskmaster任务或子任务，纳入新信息或更改。`
+*   **关键参数/选项**：
+    *   `id`：`必需。您要更新的特定Taskmaster任务的ID，例如“15”，或子任务的ID，例如“15.2”。`（CLI：`-i, --id <id>`）
+    *   `prompt`：`必需。向Taskmaster解释要纳入此任务的具体更改或提供新信息。`（CLI：`-p, --prompt <文本>`）
+    *   `research`：`允许Taskmaster使用研究角色进行更具信息量的更新。需要适当的API密钥。`（CLI：`-r, --research`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：根据新的理解或反馈细化特定任务。示例CLI：`task-master update-task --id='15' --prompt='澄清：使用PostgreSQL而不是MySQL。\n更新架构详细信息……'`
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 10. 更新子任务（`update_subtask`）
+
+*   **MCP工具**：`update_subtask`
+*   **CLI命令**：`task-master update-subtask [选项]`
+*   **描述**：`向特定的Taskmaster子任务添加带时间戳的注释或详细信息，而不会覆盖现有内容。旨在用于迭代实现记录。`
+*   **关键参数/选项**：
+    *   `id`：`必需。您要添加信息的特定Taskmaster子任务的ID，例如“15.2”。`（CLI：`-i, --id <id>`）
+    *   `prompt`：`必需。提供Taskmaster应附加到子任务详细信息中的信息或注释。确保这增加了*新*信息，而不是已经存在的内容。`（CLI：`-p, --prompt <文本>`）
+    *   `research`：`允许Taskmaster使用研究角色进行更具信息量的更新。需要适当的API密钥。`（CLI：`-r, --research`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在开发过程中向子任务添加实现注释、代码片段或澄清。在调用之前，请回顾子任务的当前详细信息，仅附加新的见解，以帮助构建详细的实现历程记录并避免冗余。示例CLI：`task-master update-subtask --id='15.2' --prompt='发现API需要头X。\n实现需要调整……'`
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 11. 设置任务状态（`set_task_status`）
+
+*   **MCP工具**：`set_task_status`
+*   **CLI命令**：`task-master set-status [选项]`
+*   **描述**：`更新一个或多个Taskmaster任务或子任务的状态，例如“pending”、“in-progress”、“done”。`
+*   **关键参数/选项**：
+    *   `id`：`必需。Taskmaster任务或子任务的ID，例如“15”、“15.2”或“16,17.1”，要更新。`（CLI：`-i, --id <id>`）
+    *   `status`：`必需。要设置的新状态，例如“done”、“pending”、“in-progress”、“review”、“cancelled”。`（CLI：`-s, --status <状态>`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：随着任务在开发周期中移动，标记进度。
+
+### 12. 删除任务（`remove_task`）
+
+*   **MCP工具**：`remove_task`
+*   **CLI命令**：`task-master remove-task [选项]`
+*   **描述**：`从Taskmaster任务列表中永久删除任务或子任务。`
+*   **关键参数/选项**：
+    *   `id`：`必需。要永久删除的Taskmaster任务的ID，例如“5”，或子任务的ID，例如“5.2”。`（CLI：`-i, --id <id>`）
+    *   `yes`：`跳过确认提示，立即删除任务。`（CLI：`-y, --yes`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：永久删除项目中不再需要的任务或子任务。
+*   **注意事项**：使用时需谨慎，因为此操作无法撤销。如果您只是想将任务排除在活动计划之外，但保留以供参考，可以考虑使用“blocked”、“cancelled”或“deferred”状态。该命令会自动清理其他任务中的依赖项引用。
+
+---
+
+## 任务结构与分解
+
+### 13. 分解任务（`expand_task`）
+
+*   **MCP工具**：`expand_task`
+*   **CLI命令**：`task-master expand [选项]`
+*   **描述**：`使用Taskmaster的AI将复杂任务分解为更小、更易于管理的子任务。默认追加子任务。`
+*   **关键参数/选项**：
+    *   `id`：`您要分解为子任务的特定Taskmaster任务的ID。`（CLI：`-i, --id <id>`）
+    *   `num`：`可选：建议Taskmaster应创建的子任务数量。否则使用复杂度分析/默认值。`（CLI：`-n, --num <数字>`）
+    *   `research`：`允许Taskmaster使用研究角色进行更具信息量的子任务生成。需要适当的API密钥。`（CLI：`-r, --research`）
+    *   `prompt`：`可选：向Taskmaster提供额外上下文或具体指令，用于生成子任务。`（CLI：`-p, --prompt <文本>`）
+    *   `force`：`可选：如果为true，则在生成新子任务之前清除现有子任务。默认为false（追加）。`（CLI：`--force`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在开始编码之前为复杂任务生成详细的实现计划。如果未指定`num`且可用复杂度报告建议，则自动使用复杂度报告建议。
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 14. 分解所有任务（`expand_all`）
+
+*   **MCP工具**：`expand_all`
+*   **CLI命令**：`task-master expand --all [选项]`（注意：CLI使用带有`--all`标志的`expand`命令）
+*   **描述**：`根据复杂度分析或默认值，让Taskmaster自动分解所有符合条件的待处理/进行中的任务。默认追加子任务。`
+*   **关键参数/选项**：
+    *   `num`：`可选：建议Taskmaster每个任务应创建的子任务数量。`（CLI：`-n, --num <数字>`）
+    *   `research`：`启用研究角色进行更具信息量的子任务生成。需要适当的API密钥。`（CLI：`-r, --research`）
+    *   `prompt`：`可选：为Taskmaster提供额外上下文，以在扩展过程中普遍应用。`（CLI：`-p, --prompt <文本>`）
+    *   `force`：`可选：如果为true，则在为每个符合条件的任务生成新子任务之前清除现有子任务。默认为false（追加）。`（CLI：`--force`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在初始任务生成或复杂度分析之后，一次性分解多个任务很有用。
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 15. 清除子任务（`clear_subtasks`）
+
+*   **MCP工具**：`clear_subtasks`
+*   **CLI命令**：`task-master clear-subtasks [选项]`
+*   **描述**：`从一个或多个指定的Taskmaster父任务中移除所有子任务。`
+*   **关键参数/选项**：
+    *   `id`：`您要移除子任务的Taskmaster父任务的ID，例如“15”或“16,18”。除非使用`all`，否则为必需。`（CLI：`-i, --id <ids>`）
+    *   `all`：`告诉Taskmaster从所有父任务中移除子任务。`（CLI：`--all`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：如果之前的分解需要替换，在使用`expand_task`重新生成子任务之前使用。
+
+### 16. 删除子任务（`remove_subtask`）
+
+*   **MCP工具**：`remove_subtask`
+*   **CLI命令**：`task-master remove-subtask [选项]`
+*   **描述**：`从其Taskmaster父任务中移除子任务，可选地将其转换为独立任务。`
+*   **关键参数/选项**：
+    *   `id`：`必需。要移除的Taskmaster子任务的ID，例如“15.2”或“16.1,16.3”。`（CLI：`-i, --id <id>`）
+    *   `convert`：`如果使用，Taskmaster将把子任务转换为常规顶级任务，而不是删除它。`（CLI：`-c, --convert`）
+    *   `skipGenerate`：`阻止Taskmaster在移除子任务后自动重新生成markdown任务文件。`（CLI：`--skip-generate`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：删除不必要的子任务或将子任务提升为顶级任务。
+
+### 17. 移动任务（`move_task`）
+
+*   **MCP工具**：`move_task`
+*   **CLI命令**：`task-master move [选项]`
+*   **描述**：`在任务层次结构内移动任务或子任务到新位置。`
+*   **关键参数/选项**：
+    *   `from`：`必需。要移动的任务/子任务的ID（例如“5”或“5.2”）。如果是多个任务，可以用逗号分隔。`（CLI：`--from <id>`）
+    *   `to`：`必需。目标的ID（例如“7”或“7.3”）。如果是逗号分隔的多个源ID，则必须与源ID数量匹配。`（CLI：`--to <id>`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：通过在层次结构内移动任务来重新组织它们。支持各种场景，例如：
+    *   将任务移动为子任务
+    *   将子任务移动为独立任务
+    *   将子任务移动到不同的父任务下
+    *   在同一父任务内重新排序子任务
+    *   将任务移动到新的不存在的ID（自动创建占位符）
+    *   一次性移动多个任务（使用逗号分隔的ID）
+*   **验证功能**：
+    *   允许将任务移动到不存在的目标ID（创建占位符任务）
+    *   防止将任务移动到已存在且已有内容的任务ID（避免覆盖）
+    *   在尝试移动之前验证源任务是否存在
+    *   维护正确的父子关系
+*   **示例CLI**：`task-master move --from=5.2 --to=7.3`，将子任务5.2移动为子任务7.3。
+*   **多任务移动示例**：`task-master move --from=10,11,12 --to=16,17,18`，一次性将多个任务移动到新位置。
+*   **常见用途**：在不同分支上创建任务时，解决tasks.json中的合并冲突。
+
+---
+
+## 依赖关系管理
+
+### 18. 添加依赖项（`add_dependency`）
+
+*   **MCP工具**：`add_dependency`
+*   **CLI命令**：`task-master add-dependency [选项]`
+*   **描述**：`在Taskmaster中定义依赖项，使一个任务成为另一个任务的先决条件。`
+*   **关键参数/选项**：
+    *   `id`：`必需。将依赖于另一个任务的Taskmaster任务的ID。`（CLI：`-i, --id <id>`）
+    *   `dependsOn`：`必需。必须首先完成的任务的ID，即先决条件。`（CLI：`-d, --depends-on <id>`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <路径>`）
+*   **使用方法**：确定任务之间的正确执行顺序。
+
+### 19. 删除依赖项（`remove_dependency`）
+
+*   **MCP工具**：`remove_dependency`
+*   **CLI命令**：`task-master remove-dependency [选项]`
+*   **描述**：`移除两个Taskmaster任务之间的依赖关系。`
+*   **关键参数/选项**：
+    *   `id`：`必需。您要移除先决条件的任务的ID。`（CLI：`-i, --id <id>`）
+    *   `dependsOn`：`必需。不再作为先决条件的任务的ID。`（CLI：`-d, --depends-on <id>`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：当执行顺序发生变化时，更新任务关系。
+
+### 20. 验证依赖项（`validate_dependencies`）
+
+*   **MCP工具**：`validate_dependencies`
+*   **CLI命令**：`task-master validate-dependencies [选项]`
+*   **描述**：`检查您的Taskmaster任务是否存在依赖问题（如循环引用或链接到不存在的任务），而不进行更改。`
+*   **关键参数/选项**：
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：审核任务依赖关系的完整性。
+
+### 21. 修复依赖项（`fix_dependencies`）
+
+*   **MCP工具**：`fix_dependencies`
+*   **CLI命令**：`task-master fix-dependencies [选项]`
+*   **描述**：`自动修复您的Taskmaster任务中的依赖问题（如循环引用或链接到不存在的任务）。`
+*   **关键参数/选项**：
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：自动清理依赖错误。
+
+---
+
+## 分析与报告
+
+### 22. 分析项目复杂度（`analyze_project_complexity`）
+
+*   **MCP工具**：`analyze_project_complexity`
+*   **CLI命令**：`task-master analyze-complexity [选项]`
+*   **描述**：`让Taskmaster分析您的任务以确定其复杂度，并建议哪些任务需要进一步分解。`
+*   **关键参数/选项**：
+    *   `output`：`保存复杂度分析报告的位置（默认：“scripts/task-complexity-report.json”）。`（CLI：`-o, --output <文件>`）
+    *   `threshold`：`应触发扩展任务建议的最小复杂度分数（1-10）。`（CLI：`-t, --threshold <数字>`）
+    *   `research`：`启用研究角色进行更准确的复杂度分析。需要适当的API密钥。`（CLI：`-r, --research`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在分解任务之前使用，以确定哪些任务最需要关注。
+*   **重要提示**：此MCP工具会调用AI，可能需要长达一分钟才能完成。请告知用户在操作进行中耐心等待。
+
+### 23. 查看复杂度报告（`complexity_report`）
+
+*   **MCP工具**：`complexity_report`
+*   **CLI命令**：`task-master complexity-report [选项]`
+*   **描述**：`以可读格式显示任务复杂度分析报告。`
+*   **关键参数/选项**：
+    *   `file`：`复杂度报告的路径（默认：“scripts/task-complexity-report.json”）。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在运行analyze-complexity之后查看和理解复杂度分析结果。
+
+---
+
+## 文件管理
+
+### 24. 生成任务文件（`generate`）
+
+*   **MCP工具**：`generate`
+*   **CLI命令**：`task-master generate [选项]`
+*   **描述**：`根据您的tasks.json为每个任务创建或更新单独的Markdown文件。`
+*   **关键参数/选项**：
+    *   `output`：`Taskmaster应保存任务文件的目录（默认：在“tasks”目录中）。`（CLI：`-o, --output <目录>`）
+    *   `file`：`您的Taskmaster“tasks.json”文件的路径。默认依赖自动检测。`（CLI：`-f, --file <文件>`）
+*   **使用方法**：在对tasks.json进行更改后运行，以保持单独任务文件的更新。
+
+---
+
+## 环境变量配置（更新）
+
+Taskmaster主要使用项目根目录中的**`.taskmasterconfig`**文件进行配置（模型、参数、日志级别等），通过`task-master models --setup`进行管理。
+
+环境变量**仅**用于与AI提供商相关的敏感API密钥和特定覆盖项，如Ollama基础URL：
+
+*   **API密钥（对应提供商必需）**：
+    *   `ANTHROPIC_API_KEY`
+    *   `PERPLEXITY_API_KEY`
+    *   `OPENAI_API_KEY`
+    *   `GOOGLE_API_KEY`
+    *   `MISTRAL_API_KEY`
+    *   `AZURE_OPENAI_API_KEY`（还需要`AZURE_OPENAI_ENDPOINT`）
+    *   `OPENROUTER_API_KEY`
+    *   `XAI_API_KEY`
+    *   `OLLAMA_API_KEY`（还需要`OLLAMA_BASE_URL`）
+*   **端点（在.taskmasterconfig中为特定提供商/可选）**：
+    *   `AZURE_OPENAI_ENDPOINT`
+    *   `OLLAMA_BASE_URL`（默认：`http://localhost:11434/api`）
+
+**设置API密钥**在项目根目录的**`.env`**文件中（用于CLI使用）或在**`.cursor/mcp.json`**文件的`env`部分中（用于MCP/Cursor集成）。所有其他设置（模型选择、最大令牌数、温度、日志级别、自定义端点）均通过`.taskmasterconfig`文件中的`task-master models`命令或`models` MCP工具进行管理。
+
+---
+
+有关这些命令如何融入开发流程的详细信息，请参阅[开发工作流指南](mdc:.cursor/rules/dev_workflow.mdc)。
