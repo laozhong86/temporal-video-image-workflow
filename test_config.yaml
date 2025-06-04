@@ -1,0 +1,339 @@
+# Comprehensive Test Configuration for Temporal Video Generation System
+# This file contains all test configurations, thresholds, and parameters
+
+# Global Test Settings
+global:
+  test_timeout: 300  # seconds
+  retry_attempts: 3
+  parallel_execution: true
+  generate_reports: true
+  report_format: ["json", "html", "markdown"]
+  log_level: "INFO"
+  
+# Test Environment Configuration
+environment:
+  temporal_server: "localhost:7233"
+  callback_server: "http://127.0.0.1:16883"
+  comfyui_server: "http://localhost:8188"
+  kling_api_base: "https://api.kling.com"
+  test_data_dir: "./test_data"
+  output_dir: "./test_results"
+  
+# Unit Test Configuration
+unit_tests:
+  enabled: true
+  coverage_threshold: 80  # percentage
+  test_patterns:
+    - "test_unit_*.py"
+    - "*_unit_test.py"
+  mock_external_services: true
+  
+# Integration Test Configuration
+integration_tests:
+  enabled: true
+  test_patterns:
+    - "test_integration_*.py"
+    - "*_integration_test.py"
+  setup_timeout: 60  # seconds
+  teardown_timeout: 30  # seconds
+  
+  # Service Dependencies
+  services:
+    temporal:
+      required: true
+      health_check_url: "http://localhost:8080/health"
+      startup_timeout: 30
+    
+    callback_server:
+      required: true
+      health_check_url: "http://127.0.0.1:16883/health"
+      startup_timeout: 10
+    
+    comfyui:
+      required: false  # Optional for integration tests
+      health_check_url: "http://localhost:8188/health"
+      startup_timeout: 60
+
+# Performance Test Configuration
+performance_tests:
+  enabled: true
+  test_patterns:
+    - "test_performance_*.py"
+    - "*_performance_test.py"
+  
+  # Load Test Scenarios
+  load_scenarios:
+    light_load:
+      concurrent_users: 5
+      requests_per_user: 10
+      ramp_up_time: 5
+      test_duration: 30
+      target_throughput: 5
+      
+    moderate_load:
+      concurrent_users: 20
+      requests_per_user: 15
+      ramp_up_time: 10
+      test_duration: 60
+      target_throughput: 15
+      
+    heavy_load:
+      concurrent_users: 50
+      requests_per_user: 10
+      ramp_up_time: 20
+      test_duration: 120
+      target_throughput: 25
+  
+  # Performance Thresholds
+  thresholds:
+    response_time:
+      avg_max: 5.0  # seconds
+      p95_max: 10.0  # seconds
+      p99_max: 15.0  # seconds
+    
+    throughput:
+      min_requests_per_second: 1.0
+    
+    success_rate:
+      min_percentage: 95.0
+    
+    resource_usage:
+      cpu_max_percentage: 85.0
+      memory_max_mb: 2048
+      disk_max_mb: 1024
+
+# Stress Test Configuration
+stress_tests:
+  enabled: true
+  test_patterns:
+    - "test_stress_*.py"
+    - "*_stress_test.py"
+  
+  scenarios:
+    cpu_stress:
+      concurrent_tasks: 50
+      task_duration: 30
+      cpu_intensive_operations: 1000
+    
+    memory_stress:
+      concurrent_tasks: 20
+      memory_allocation_mb: 100
+      allocation_cycles: 100
+    
+    connection_stress:
+      concurrent_connections: 200
+      requests_per_connection: 10
+      connection_timeout: 5
+  
+  # Stress Test Thresholds
+  thresholds:
+    failure_rate_max: 15.0  # percentage
+    recovery_time_max: 30.0  # seconds
+    memory_leak_threshold_mb: 100
+
+# Security Test Configuration
+security_tests:
+  enabled: true
+  test_patterns:
+    - "test_security_*.py"
+    - "*_security_test.py"
+  
+  # Input Validation Tests
+  input_validation:
+    max_prompt_length: 1000
+    max_user_id_length: 100
+    allowed_file_types: ["json", "txt", "md"]
+    
+  # Authentication Tests
+  authentication:
+    api_key_min_length: 20
+    session_timeout_max: 3600  # seconds
+    max_login_attempts: 5
+    
+  # Rate Limiting Tests
+  rate_limiting:
+    requests_per_minute: 60
+    burst_limit: 10
+    
+  # Security Thresholds
+  thresholds:
+    vulnerability_tolerance: 0  # No vulnerabilities allowed
+    security_score_min: 95  # percentage
+
+# End-to-End Test Configuration
+e2e_tests:
+  enabled: true
+  test_patterns:
+    - "test_e2e_*.py"
+    - "*_e2e_test.py"
+  
+  # Test Scenarios
+  scenarios:
+    complete_workflow:
+      timeout: 600  # 10 minutes
+      retry_attempts: 2
+      
+    error_recovery:
+      timeout: 300  # 5 minutes
+      simulate_failures: true
+      
+    multi_user:
+      concurrent_users: 10
+      test_duration: 300  # 5 minutes
+
+# Test Data Configuration
+test_data:
+  # Sample prompts for testing
+  sample_prompts:
+    - "A beautiful sunset over mountains"
+    - "A cat playing with a ball of yarn"
+    - "Abstract geometric patterns in motion"
+    - "A futuristic city skyline at night"
+    - "Ocean waves crashing on a rocky shore"
+  
+  # Test user IDs
+  test_users:
+    - "test_user_1"
+    - "test_user_2"
+    - "test_user_admin"
+    - "test_user_guest"
+  
+  # Video parameters for testing
+  video_params:
+    dimensions:
+      - {width: 512, height: 512}
+      - {width: 768, height: 768}
+      - {width: 1024, height: 576}
+    
+    durations:
+      - 5.0
+      - 10.0
+      - 15.0
+  
+  # Malicious test data for security tests
+  malicious_inputs:
+    sql_injection:
+      - "'; DROP TABLE users; --"
+      - "1' OR '1'='1"
+      - "UNION SELECT * FROM passwords"
+    
+    xss_payloads:
+      - "<script>alert('xss')</script>"
+      - "<img src=x onerror=alert(1)>"
+      - "javascript:alert('xss')"
+    
+    path_traversal:
+      - "../../../etc/passwd"
+      - "..\\..\\..\\windows\\system32"
+      - "/etc/shadow"
+
+# Monitoring and Alerting
+monitoring:
+  enabled: true
+  
+  # Metrics to collect
+  metrics:
+    - "response_time"
+    - "throughput"
+    - "error_rate"
+    - "cpu_usage"
+    - "memory_usage"
+    - "disk_usage"
+    - "network_io"
+  
+  # Alert thresholds
+  alerts:
+    high_error_rate:
+      threshold: 5.0  # percentage
+      duration: 60  # seconds
+    
+    high_response_time:
+      threshold: 10.0  # seconds
+      duration: 30  # seconds
+    
+    resource_exhaustion:
+      cpu_threshold: 90.0  # percentage
+      memory_threshold: 90.0  # percentage
+      duration: 120  # seconds
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  
+  # Report types
+  types:
+    summary: true
+    detailed: true
+    performance: true
+    security: true
+    coverage: true
+  
+  # Output formats
+  formats:
+    json: true
+    html: true
+    markdown: true
+    pdf: false  # Requires additional dependencies
+  
+  # Report destinations
+  destinations:
+    file_system: true
+    email: false
+    slack: false
+    webhook: false
+  
+  # Report retention
+  retention:
+    days: 30
+    max_reports: 100
+
+# CI/CD Integration
+ci_cd:
+  enabled: true
+  
+  # Pipeline stages
+  stages:
+    unit_tests:
+      required: true
+      failure_action: "stop"
+    
+    integration_tests:
+      required: true
+      failure_action: "stop"
+    
+    performance_tests:
+      required: false
+      failure_action: "warn"
+    
+    security_tests:
+      required: true
+      failure_action: "stop"
+  
+  # Quality gates
+  quality_gates:
+    code_coverage_min: 80
+    security_score_min: 95
+    performance_regression_max: 10  # percentage
+
+# Cleanup Configuration
+cleanup:
+  enabled: true
+  
+  # What to clean up after tests
+  targets:
+    - "temp_files"
+    - "test_databases"
+    - "log_files"
+    - "cache_files"
+  
+  # Cleanup schedule
+  schedule:
+    after_each_test: false
+    after_test_suite: true
+    daily: true
+  
+  # Retention policies
+  retention:
+    test_artifacts_days: 7
+    log_files_days: 14
+    report_files_days: 30

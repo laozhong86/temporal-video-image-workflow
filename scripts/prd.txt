@@ -1,0 +1,139 @@
+<context>
+# Overview
+Temporal工作流引擎技术预研项目，旨在验证基于Temporal Python SDK的"生图→图转视频"任务处理系统的可靠性和稳定性。该系统需要支持并发控制、进度监控、自动重试和状态持久化等关键特性，通过渐进式测试验证从单任务到100任务的系统表现。
+
+# Core Features
+- **并发控制系统**：通过全局信号量确保同时仅有1条任务在执行状态，验证系统可靠性
+- **进度监控机制**：实时追踪任务执行进度，支持前端实时查询和订阅百分比更新
+- **自动重试策略**：针对图片生成和视频生成失败场景，实现最多3次重试的容错机制
+- **状态持久化**：基于JSON文件的任务状态记录，确保任务状态可追踪和故障可排查
+- **异步回调处理**：集成Kling API异步回调，通过Workflow Signal机制更新任务状态
+- **渐进式压力测试**：从1条任务逐步增加到100条，验证系统在不同负载下的稳定性表现
+
+# User Experience
+- **开发者用户**：技术预研人员，需要验证Temporal工作流的可靠性和性能表现
+- **系统管理员**：负责监控任务执行状态，通过Temporal UI观察系统运行情况
+- **关键用户流程**：
+  1. 启动Temporal Server和Worker服务
+  2. 执行渐进式测试脚本
+  3. 通过Temporal UI监控任务执行状态
+  4. 分析测试结果和系统性能指标
+</context>
+<PRD>
+# Technical Architecture
+- **核心组件**：
+  - Temporal Server：工作流编排引擎（Docker部署，Web UI端口8080）
+  - Python Worker：任务执行器，基于temporalio[async]和pydantic
+  - 图片生成服务：基于ComfyUI的HTTP服务（http://81.70.239.227:6889）
+  - 视频生成服务：基于Kling API的本地代理服务（http://127.0.0.1:16882）
+
+- **数据模型**：
+  - JobInput：包含prompt和style的任务输入模型
+  - Progress：包含step、status、percent和asset_url的进度跟踪模型
+  - Step枚举：定义image和video两个处理阶段
+
+- **API集成**：
+  - 图片生成API：POST /img/submit, GET /img/status/{job_id}, GET /img/result/{job_id}
+  - 视频生成API：POST /video/submit, GET /video/status/{job_id}
+  - Kling回调API：POST /callback/kling处理异步回调
+
+- **基础设施要求**：
+  - Docker和Docker Compose环境
+  - Python 3.8+运行环境
+  - 本地文件系统用于任务状态持久化
+
+# Development Roadmap
+
+## Phase 1: 基础框架搭建（MVP）
+- 实现核心数据模型（models.py）
+- 开发图片生成Activity（activities.py中的gen_image函数）
+- 创建基础Workflow定义（workflows.py中的GenVideoWorkflow类）
+- 搭建Worker启动脚本（worker.py）
+- 配置Temporal Server环境（docker-compose.yml）
+
+## Phase 2: 视频生成集成
+- 实现视频生成Activity（activities.py中的request_video函数）
+- 集成Kling API异步回调机制
+- 完善Workflow Signal处理（kling_done信号）
+- 实现进度查询Query接口（get_progress）
+
+## Phase 3: 可靠性增强
+- 添加重试策略配置（RETRY_POLICY）
+- 实现任务状态持久化（JSON文件存储）
+- 配置全局并发控制（GLOBAL_SEMAPHORE）
+- 开发错误处理和恢复机制
+
+## Phase 4: 测试验证系统
+- 创建渐进式测试脚本（submit.py）
+- 实现批次任务提交逻辑
+- 配置测试监控和指标收集
+- 开发测试结果分析工具
+
+## Phase 5: 监控和可视化
+- 集成Temporal UI监控界面
+- 实现自定义搜索属性（CustomProgress, CustomTag）
+- 开发进度查询API接口
+- 添加WebSocket实时推送支持
+
+# Logical Dependency Chain
+
+## 基础依赖（必须首先完成）
+1. **环境搭建**：Docker环境 → Temporal Server部署 → Python SDK安装
+2. **数据模型**：定义核心数据结构 → 为后续所有组件提供类型基础
+3. **基础Activity**：图片生成Activity → 作为工作流的第一个步骤
+
+## 核心功能构建
+4. **基础Workflow**：简单的图片生成工作流 → 验证基本功能可用性
+5. **Worker服务**：任务执行器 → 使基础工作流能够运行
+6. **视频生成扩展**：添加视频生成Activity → 完成完整业务流程
+
+## 可靠性增强
+7. **重试机制**：在Activity层面添加重试逻辑 → 提高系统容错能力
+8. **状态持久化**：JSON文件存储 → 确保任务状态可追踪
+9. **并发控制**：全局信号量 → 满足测试可靠性要求
+
+## 测试验证
+10. **测试脚本**：渐进式测试工具 → 验证系统性能和稳定性
+11. **监控集成**：Temporal UI配置 → 提供可视化监控能力
+
+# Risks and Mitigations
+
+## 技术挑战
+- **风险**：Temporal工作流的学习曲线较陡峭
+- **缓解**：从简单的单步骤工作流开始，逐步增加复杂性
+
+- **风险**：外部API（ComfyUI、Kling）的稳定性和响应时间不可控
+- **缓解**：实现完善的重试机制和超时处理，添加降级策略
+
+## MVP范围确定
+- **风险**：功能范围过大，影响预研进度
+- **缓解**：专注于核心验证目标（并发控制、重试、状态持久化），其他功能作为后续增强
+
+- **风险**：测试场景不够全面，无法充分验证系统可靠性
+- **缓解**：设计渐进式测试策略，从单任务到100任务逐步验证
+
+## 资源约束
+- **风险**：本地开发环境资源限制
+- **缓解**：使用Docker容器化部署，优化资源使用；设置合理的并发限制
+
+- **风险**：外部服务依赖可能影响测试结果
+- **缓解**：准备Mock服务作为备选方案，确保测试可以独立进行
+
+# Appendix
+
+## 技术规范
+- **Python版本**：3.8+
+- **核心依赖**：temporalio[async], pydantic, httpx, fastapi
+- **部署方式**：Docker Compose
+- **监控端口**：Temporal UI (8080), 图片服务 (6889), 视频服务 (16882)
+
+## 测试计划
+- **测试批次**：1, 5, 10, 20, 50, 100条任务
+- **验证指标**：成功率、重试次数、执行时间、并发控制效果
+- **监控方式**：Temporal UI + JSON文件状态记录
+
+## 预期成果
+- 验证Temporal工作流在AI内容生成场景下的可靠性
+- 建立可重用的工作流模板和最佳实践
+- 为后续生产环境部署提供技术基础和性能基准
+</PRD>

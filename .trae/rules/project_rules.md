@@ -1,46 +1,17 @@
 ---
-以下是一些重要规则，涵盖:
-- 开发工作流程
-- .trae 文档自我改进工作流程
-- 修改或添加新章节/规则时要遵循的模板
+描述：使用任务大师管理以任务为驱动的开发工作流的指南
+模式匹配：**/*
+始终应用：true
 ---
-开发工作流程
+RULES
 ---
-描述: 使用元开发脚本(scripts/dev.js)管理任务驱动开发工作流程的指南
-文件匹配: **/*
-应用规则文件: **/*
-始终应用: true
----
-- **全局命令行界面**
-  - Task Master 现在通过 `task-master` 命令提供全局 CLI
-  - `scripts/dev.js` 的所有功能都可以通过此界面使用
-  - 通过 `npm install -g claude-task-master` 全局安装或通过 `npx` 本地使用
-  - 使用 `task-master <命令>` 替代 `node scripts/dev.js <命令>`
-  - 示例:
-    - 使用 `task-master list` 替代 `node scripts/dev.js list`
-    - 使用 `task-master next` 替代 `node scripts/dev.js next`
-    - 使用 `task-master expand --id=3` 替代 `node scripts/dev.js expand --id=3`
-  - 所有命令接受与脚本相同的选项
-  - CLI 提供额外命令如 `task-master init` 用于项目设置
-- **开发工作流程**
-  - 通过运行 `task-master init` 或 `node scripts/dev.js parse-prd --input=<prd-file.txt>` 开始新项目以生成初始 tasks.json
-  - 使用 `task-master list` 开始编码会话以查看当前任务、状态和 ID
-  - 在分解任务前使用 `task-master analyze-complexity --research` 分析任务复杂度
-  - 基于依赖项(全部标记为'完成')、优先级和 ID 顺序选择任务
-  - 通过检查 tasks/ 目录中的任务文件或询问用户输入来明确任务
-  - 使用 `task-master show <id>` 查看具体任务详情以了解实现要求
-  - 使用 `task-master expand --id=<id>` 及适当的标志分解复杂任务
-  - 如需要,在重新生成前使用 `task-master clear-subtasks --id=<id>` 清除现有子任务
-  - 按照任务详情、依赖项和项目标准实现代码
-  - 在标记完成前根据测试策略验证任务
-  - 使用 `task-master set-status --id=<id> --status=done` 标记已完成任务
-  - 当实现与原计划不同时更新依赖任务
-  - 更新 tasks.json 后使用 `task-master generate` 生成任务文件
-  - 需要时使用 `task-master fix-dependencies` 维护有效的依赖结构
-  - 选择工作时遵循依赖链和任务优先级
-  - 使用 list 命令定期报告进度
+- 项目基准目录为：/Users/x/Documents/GXGen/ 产品开发 / 预研 / 技术预研 / Temporal
+- 所有文件路径必须相对于此目录。但命令可在终端中更改目录，因此需遵循 <execute_command> 响应中指定的工作目录。
+- 禁止使用cd切换至其他目录完成任务，只能在此目录下操作，使用需要路径的工具时务必传入正确的 “path” 参数。
+- 不得使用～或 $HOME 指代主目录。
+- 使用 命令行 工具前，需结合提供的系统信息分析用户环境，确保命令兼容性。若需在基准目录外的特定目录执行命令，需先通过cd进入该目录再执行（如cd 项目路径 && 命令）。
 
----
+
 TRAE_RULES
 ---
 描述: 创建和维护 Trae 规则以确保一致性和有效性的指南。

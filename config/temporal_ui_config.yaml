@@ -1,0 +1,132 @@
+# Temporal UI Configuration for Custom Search Attributes and Monitoring
+# This configuration enables CustomProgress and CustomTag search attributes in Temporal Web UI
+
+# Search Attributes Configuration
+search_attributes:
+  # Custom Progress attribute for detailed workflow progress tracking
+  CustomProgress:
+    type: Text
+    description: "Custom progress tracking in format 'step:status:percent'"
+    searchable: true
+    filterable: true
+    display_name: "Custom Progress"
+    
+  # Custom Tag attribute for workflow categorization and filtering
+  CustomTag:
+    type: Text
+    description: "Custom tags for workflow categorization and monitoring"
+    searchable: true
+    filterable: true
+    display_name: "Custom Tag"
+
+# UI Dashboard Configuration
+dashboard:
+  # Default filters for workflow monitoring
+  default_filters:
+    - attribute: "CustomTag"
+      operator: "contains"
+      value: "benchmark"
+    - attribute: "WorkflowStatus"
+      operator: "in"
+      values: ["RUNNING", "COMPLETED", "FAILED"]
+  
+  # Custom columns to display in workflow list
+  custom_columns:
+    - name: "Custom Progress"
+      attribute: "CustomProgress"
+      width: 150
+    - name: "Custom Tag"
+      attribute: "CustomTag"
+      width: 120
+    - name: "Job Type"
+      attribute: "JobType"
+      width: 100
+    - name: "Progress %"
+      attribute: "ProgressPercentage"
+      width: 80
+    - name: "Current Step"
+      attribute: "CurrentStep"
+      width: 120
+  
+  # Refresh intervals for real-time monitoring
+  refresh_intervals:
+    workflow_list: 5000  # 5 seconds
+    workflow_detail: 2000  # 2 seconds
+    metrics: 10000  # 10 seconds
+
+# Monitoring Configuration
+monitoring:
+  # Alerts configuration
+  alerts:
+    - name: "High Error Rate"
+      condition: "ErrorCount > 5"
+      severity: "warning"
+    - name: "Workflow Timeout"
+      condition: "DurationSeconds > 3600"  # 1 hour
+      severity: "critical"
+    - name: "Failed Workflows"
+      condition: "WorkflowStatus == 'FAILED'"
+      severity: "error"
+  
+  # Metrics to track
+  metrics:
+    - name: "Active Workflows"
+      query: "WorkflowStatus:RUNNING"
+      type: "count"
+    - name: "Completed Today"
+      query: "WorkflowStatus:COMPLETED AND StartTime:[now-1d TO now]"
+      type: "count"
+    - name: "Average Progress"
+      query: "WorkflowStatus:RUNNING"
+      field: "ProgressPercentage"
+      type: "average"
+    - name: "Error Rate"
+      query: "ErrorCount:[1 TO *]"
+      type: "percentage"
+
+# Custom Views Configuration
+custom_views:
+  - name: "Benchmark Workflows"
+    description: "View for benchmark and testing workflows"
+    filters:
+      - attribute: "CustomTag"
+        operator: "contains"
+        value: "benchmark"
+    columns: ["WorkflowId", "CustomProgress", "CustomTag", "WorkflowStatus", "StartTime"]
+  
+  - name: "Production Workflows"
+    description: "View for production workflows"
+    filters:
+      - attribute: "CustomTag"
+        operator: "not_contains"
+        value: "test"
+      - attribute: "JobType"
+        operator: "in"
+        values: ["IMAGE", "VIDEO"]
+    columns: ["WorkflowId", "JobType", "CustomProgress", "WorkflowStatus", "UserId"]
+  
+  - name: "Error Analysis"
+    description: "View for analyzing failed workflows"
+    filters:
+      - attribute: "WorkflowStatus"
+        operator: "equals"
+        value: "FAILED"
+    columns: ["WorkflowId", "CustomTag", "ErrorCount", "LastUpdateTime", "DurationSeconds"]
+
+# Export Configuration
+export:
+  # Available export formats
+  formats: ["json", "csv", "xlsx"]
+  
+  # Default export fields
+  default_fields:
+    - "WorkflowId"
+    - "WorkflowStatus"
+    - "CustomProgress"
+    - "CustomTag"
+    - "JobType"
+    - "StartTime"
+    - "EndTime"
+    - "DurationSeconds"
+    - "ErrorCount"
+    - "ProgressPercentage"

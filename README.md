@@ -1,148 +1,372 @@
-# TaskMaster 项目
+# Temporal Video/Image Generation Workflow
 
-## 项目概述
+这是一个基于 Temporal 的视频和图片生成工作流系统，支持异步处理、错误重试、状态监控和批量处理。
 
-TaskMaster 是一个强大的任务管理工具，帮助开发者有效地分解、跟踪和完成复杂项目。该工具使用 AI 辅助技术，优化项目开发流程，提高工作效率。
+## 功能特性
 
-## 主要功能
+- **视频生成工作流**: 支持异步视频生成请求处理
+- **图片生成工作流**: 支持异步图片生成请求处理
+- **批量处理工作流**: 支持多个请求的并行或串行处理
+- **错误处理和重试**: 内置重试机制和错误恢复
+- **状态监控**: 实时查询工作流状态和进度
+- **资源管理**: 自动清理临时文件和资源
+- **通知系统**: 支持 Webhook、邮件和 Slack 通知
 
-- **任务分解**：自动将复杂项目拆分为可管理的小任务
-- **任务依赖管理**：追踪和维护任务间的依赖关系
-- **AI 辅助开发**：利用多种 AI 模型提供智能建议和解决方案
-- **项目部署**：简化项目文件的部署和复制过程
-- **复杂度分析**：评估任务复杂度，优化资源分配
-
-## 快速入门
-
-### 安装要求
-
-- Node.js (v14.0.0 或更高版本)
-- npm 或 yarn 包管理器
-- 有效的 API 密钥 (用于 AI 功能)
-
-### 安装步骤
-
-1. 克隆仓库：
-   ```
-   git clone [仓库URL]
-   cd taskmaster
-   ```
-
-2. 安装依赖：
-   ```
-   npm install
-   ```
-   或
-   ```
-   yarn install
-   ```
-
-3. 配置环境：
-   ```
-   cp .env.example .env
-   ```
-   然后编辑 `.env` 文件，添加您的 API 密钥和其他配置
-
-4. 全局安装 CLI（可选）：
-   ```
-   npm install -g claude-task-master
-   ```
-
-## 使用指南
-
-### 基本命令
-
-TaskMaster 提供了一系列命令行工具，帮助您管理项目：
-
-- **初始化项目**：
-  ```
-  task-master init
-  ```
-  或
-  ```
-  node scripts/dev.js parse-prd --input=<prd-file.txt>
-  ```
-
-- **查看任务列表**：
-  ```
-  task-master list
-  ```
-
-- **分析任务复杂度**：
-  ```
-  task-master analyze-complexity --research
-  ```
-
-- **分解任务**：
-  ```
-  task-master expand --id=<id>
-  ```
-
-- **更新任务状态**：
-  ```
-  task-master set-status --id=<id> --status=done
-  ```
-
-### 项目部署
-
-使用内置的部署工具，您可以轻松地将项目文件复制到目标目录：
+## 项目结构
 
 ```
-node scripts/deploy.js [目标路径]
+.
+├── models/                 # 数据模型定义
+│   ├── __init__.py
+│   ├── video_request.py    # 视频请求/响应模型
+│   └── image_request.py    # 图片请求/响应模型
+├── activities/             # Temporal 活动定义
+│   ├── __init__.py
+│   ├── video_activities.py # 视频相关活动
+│   ├── image_activities.py # 图片相关活动
+│   └── common_activities.py# 通用活动
+├── workflows/              # Temporal 工作流定义
+│   ├── __init__.py
+│   ├── video_workflow.py   # 视频生成工作流
+│   ├── image_workflow.py   # 图片生成工作流
+│   └── batch_workflow.py   # 批量处理工作流
+├── main.py                 # 主应用程序入口
+├── config.py               # 配置管理
+├── requirements.txt        # Python 依赖
+├── .env.example           # 环境变量示例
+├── .gitignore             # Git 忽略文件
+└── README.md              # 项目文档
 ```
 
-此命令会将当前项目的所有文件（排除特定系统文件）复制到指定目录，并在执行前进行确认。
+## 安装和配置
+
+### 1. 安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. 配置环境变量
+
+复制环境变量示例文件并配置：
+
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 文件，配置必要的参数：
+
+```bash
+# 必需配置
+VIDEO_API_KEY=your_video_api_key_here
+IMAGE_API_KEY=your_image_api_key_here
+
+# 可选配置
+TEMPORAL_HOST=localhost:7233
+TEMPORAL_NAMESPACE=default
+```
+
+### 3. 启动 Temporal Server
+
+使用 Docker 启动 Temporal 开发环境：
+
+```bash
+# 使用 Docker Compose
+docker run --rm -p 7233:7233 -p 8233:8233 temporalio/auto-setup:latest
+
+# 或者使用 Temporal CLI
+temporal server start-dev
+```
+
+### 4. 启动 Worker
+
+```bash
+python main.py
+```
+
+## 使用方法
+
+### 视频生成工作流
+
+```python
+from main import TemporalApp
+
+app = TemporalApp()
+await app.initialize()
+
+# 提交视频生成请求
+video_request = {
+    "request_id": "video_001",
+    "type": "video",
+    "prompt": "A beautiful sunset over the ocean",
+    "duration": 10,
+    "resolution": "1920x1080",
+    "fps": 30,
+    "style": "realistic",
+    "webhook_url": "https://example.com/webhook",
+    "user_id": "user123"
+}
+
+workflow_id = await app.submit_video_workflow(video_request)
+print(f"Video workflow started: {workflow_id}")
+```
+
+### 图片生成工作流
+
+```python
+# 提交图片生成请求
+image_request = {
+    "request_id": "image_001",
+    "type": "image",
+    "prompt": "A majestic mountain landscape",
+    "width": 1024,
+    "height": 1024,
+    "style": "photorealistic",
+    "num_images": 2,
+    "webhook_url": "https://example.com/webhook",
+    "user_id": "user123"
+}
+
+workflow_id = await app.submit_image_workflow(image_request)
+print(f"Image workflow started: {workflow_id}")
+```
+
+### 批量处理工作流
+
+```python
+# 提交批量处理请求
+batch_request = {
+    "batch_id": "batch_001",
+    "processing_strategy": "parallel",  # 或 "sequential"
+    "max_concurrent": 3,
+    "requests": [video_request, image_request]
+}
+
+workflow_id = await app.submit_batch_workflow(batch_request)
+print(f"Batch workflow started: {workflow_id}")
+```
+
+### 查询工作流状态
+
+```python
+# 查询工作流状态
+status = await app.get_workflow_status(workflow_id)
+print(f"Workflow status: {status}")
+
+# 取消工作流
+success = await app.cancel_workflow(workflow_id)
+print(f"Cancellation successful: {success}")
+```
+
+## 数据模型
+
+### 视频请求模型
+
+```python
+class VideoRequest(BaseModel):
+    request_id: str
+    prompt: str
+    duration: int = 10  # 秒
+    resolution: str = "1920x1080"
+    fps: int = 30
+    style: str = "realistic"
+    webhook_url: Optional[str] = None
+    user_id: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+```
+
+### 图片请求模型
+
+```python
+class ImageRequest(BaseModel):
+    request_id: str
+    prompt: str
+    width: int = 1024
+    height: int = 1024
+    style: str = "photorealistic"
+    num_images: int = 1
+    webhook_url: Optional[str] = None
+    user_id: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+```
+
+## 工作流特性
+
+### 错误处理和重试
+
+- 自动重试失败的活动
+- 可配置的重试策略
+- 详细的错误日志和通知
+
+### 状态监控
+
+- 实时查询工作流状态
+- 进度跟踪
+- 性能指标收集
+
+### 资源管理
+
+- 自动清理临时文件
+- 内存使用监控
+- 超时处理
+
+### 通知系统
+
+- Webhook 通知
+- 邮件通知（可选）
+- Slack 通知（可选）
 
 ## 配置选项
 
-TaskMaster 提供了丰富的配置选项，可通过 `.taskmasterconfig` 文件进行设置：
+### Temporal 配置
 
-- **模型配置**：设置不同用途的 AI 模型
-- **全局设置**：调整日志级别、默认任务数量等
-- **API 集成**：配置与各种 AI 服务的连接
+- `TEMPORAL_HOST`: Temporal 服务器地址
+- `TEMPORAL_NAMESPACE`: 命名空间
+- `TEMPORAL_TASK_QUEUE`: 任务队列名称
 
-## 支持的 AI 提供商
+### API 配置
 
-TaskMaster 支持多种 AI 服务提供商：
+- `VIDEO_API_BASE_URL`: 视频生成 API 地址
+- `VIDEO_API_KEY`: 视频生成 API 密钥
+- `IMAGE_API_BASE_URL`: 图片生成 API 地址
+- `IMAGE_API_KEY`: 图片生成 API 密钥
 
-- OpenRouter
-- Anthropic (Claude)
-- Perplexity
-- OpenAI
-- Google (Gemini)
-- Mistral AI
-- xAI
-- Azure OpenAI
-- Ollama
+### 存储配置
 
-## 最佳实践
+- `TEMP_DIR`: 临时文件目录
+- `RESULTS_DIR`: 结果文件目录
+- `S3_BUCKET`: S3 存储桶（可选）
 
-- 使用 `task-master list` 开始每个编码会话，了解当前任务状态
-- 对于复杂任务，先使用 `analyze-complexity` 进行分析
-- 按照依赖关系顺序完成任务，避免阻塞
-- 及时更新任务状态，保持项目进度透明
-- 定期查看复杂度报告，优化工作计划
+### 安全配置
 
-## 常见问题
+- `REQUIRE_API_KEY`: 是否需要 API 密钥验证
+- `API_KEYS`: 有效的 API 密钥列表
+- `ENABLE_RATE_LIMITING`: 是否启用速率限制
 
-**Q: 如何添加新的任务？**
-A: 可以通过 `task-master add` 命令添加，或直接编辑 tasks.json 文件。
+## 开发和测试
 
-**Q: 如何处理任务依赖关系变化？**
-A: 使用 `task-master update` 命令更新相关任务。
+### 运行测试
 
-**Q: API 密钥安全存储在哪里？**
-A: 所有密钥存储在项目根目录的 .env 文件中，该文件不会被版本控制系统跟踪。
+```bash
+# 运行示例测试
+python main.py test
+```
 
-## 贡献指南
+### 开发模式
 
-欢迎提交问题报告和功能建议。如需贡献代码，请确保：
+```bash
+# 设置开发环境变量
+export DEBUG=true
+export MOCK_EXTERNAL_APIS=true
 
-1. 代码符合项目编码规范
-2. 为新功能编写测试
-3. 更新相关文档
-4. 提交前运行全部测试
+# 启动开发服务器
+python main.py
+```
+
+## 监控和日志
+
+### 日志配置
+
+```bash
+# 设置日志级别
+export LOG_LEVEL=DEBUG
+
+# 设置日志文件
+export LOG_FILE_PATH=./logs/app.log
+
+# 启用 JSON 格式日志
+export USE_JSON_LOGGING=true
+```
+
+### Temporal Web UI
+
+访问 Temporal Web UI 查看工作流状态：
+
+```
+http://localhost:8233
+```
+
+## 部署
+
+### Docker 部署
+
+```dockerfile
+# Dockerfile 示例
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+CMD ["python", "main.py"]
+```
+
+### Kubernetes 部署
+
+```yaml
+# deployment.yaml 示例
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal-worker
+  template:
+    metadata:
+      labels:
+        app: temporal-worker
+    spec:
+      containers:
+      - name: worker
+        image: your-registry/temporal-worker:latest
+        env:
+        - name: TEMPORAL_HOST
+          value: "temporal-server:7233"
+        - name: VIDEO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: video-api-key
+```
+
+## 故障排除
+
+### 常见问题
+
+1. **连接 Temporal 服务器失败**
+   - 检查 `TEMPORAL_HOST` 配置
+   - 确保 Temporal 服务器正在运行
+
+2. **API 调用失败**
+   - 检查 API 密钥配置
+   - 验证 API 端点可访问性
+
+3. **工作流超时**
+   - 调整超时配置
+   - 检查外部服务响应时间
+
+### 日志分析
+
+```bash
+# 查看错误日志
+grep "ERROR" logs/app.log
+
+# 查看特定工作流日志
+grep "workflow_id=video_001" logs/app.log
+```
+
+## 贡献
+
+1. Fork 项目
+2. 创建功能分支
+3. 提交更改
+4. 推送到分支
+5. 创建 Pull Request
 
 ## 许可证
 
-本项目采用 [许可证类型] 许可证。详情请参阅 LICENSE 文件。
+MIT License

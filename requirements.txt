@@ -1,0 +1,13 @@
+temporalio>=1.0.0
+pydantic>=2.0.0
+httpx>=0.24.0
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-dotenv>=1.0.0
+typing-extensions>=4.0.0
+# Additional dependencies for testing and monitoring
+psutil>=5.9.0
+PyYAML>=6.0.0
+# PostgreSQL dependencies for audit logging
+asyncpg>=0.28.0
+psycopg2-binary>=2.9.0
